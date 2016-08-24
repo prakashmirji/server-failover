@@ -1,0 +1,53 @@
+The scripts demonstrate the functionality of connecting HPE OneView with
+external applications.
+
+In HPE OneView the State-Change Message Bus (SCMB) is an interface that uses
+asynchronous messaging to notify subscribers of changes to managed resources,
+both logical and physical. For example, you can program applications to receive
+notifications when new server hardware is added to the managed environment or
+when the health status of physical resources changes without having to
+continuously poll the appliance for status using the REST APIs.
+
+HPE OneView resources publish messages to the SCMB when they are created,
+updated, or deleted. The message content is sent in JSON (JavaScript Object
+Notation) format and includes the resource model. To view the list of HPE OneView
+resources that publish messages, see the HPE OneView REST API Reference.
+
+In order for the scripts to register and listen on the SCMB a couple
+of thing need to happen first.
+
+#1. The HPE OneView appliance needs to generate a Rabbit MQ keypair. This does
+not happen by default and must be done ONE TIME for the running HPE OneView
+appliance. If the scripts is run with the '-g' argument it will request that
+the keypair is generated and exit. This only needs to be done
+#1. Onetime for each HPE OneView appliance.
+
+#2. The script needs to download a copy of the SSL key and certificate. If
+ the example scripts is run with the '-d' option it will download the
+required key and certificate. Again, this only needs to be done one time for the
+script.
+
+The below script generates, download the certificates and then monitors the alerts
+received from HPE OneView's State-Change Message Bus. Specifically, the scmb alerts
+raised for server profiles when they are at critical/warning state and is in ACTIVE mode.
+This code then forks a thread to handle migration of server profile to another server hardware.
+
+The forked script to create copy of server profile is termed create_server_profile_to_hardware.py,
+Here server hardware's with no profile are fetched. This server hardware list is
+then parsed to get a server hardware with good health and NIC status. A check is
+further done to check if the hardware type matches that of server profile hardware
+for which the alert was raised. The script then updates the server profile with the
+new hardware details. A single profile update failure state is checked and the
+process is repeated to ensure that we result in healthy server profile.
+
+
+The profile_migrationy.py scrip can be invoked by:
+
+  ./profile_migration.py -a [HPE OneView Appliance IP] -u Administrator -p MyPass
+                           
+                               or
+
+  set appliance ip, username and password in the profile_migration parameters
+
+  ./profile_migration.py
+
