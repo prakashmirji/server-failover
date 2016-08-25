@@ -1,34 +1,53 @@
-SetUp Requirement:
-VM - Red Hat Enterprise Linux Server release 7.2 (Maipo)
-Python version 3.4
-OneView 2.0[needs library future-0.15.2, setuptools-18.3.1 to be installed on python] https://github.com/HewlettPackard/python-hpOneView
-pika-0.10.0 to be installed on python https://pypi.python.org/pypi/pika
-The future library can be downloaded at https://pypi.python.org/pypi/future
-The setuptools-18.3.1 library can be downloaded at https://pypi.python.org/pypi/setuptools/18.3.1
+SetUp Requirements:
 
+1. RHEL 7.x or CentOS 7.x server ( can be VM )
+2. Python version 3.4 or above
+3. download oneview python library from https://github.com/HewlettPackard/python-hpOneView and follow the steps 
+   specified in https://github.com/HewlettPackard/python-hpOneView/blob/master/README.md
+4. install following python modules 
+	a. pika-0.10.0 to be installed on python https://pypi.python.org/pypi/pika
+	b. library future-0.15.2, 
+	c. setuptools-18.3.1
+Notes:
+	The future library can be downloaded at https://pypi.python.org/pypi/future
+	The setuptools-18.3.1 library can be downloaded at https://pypi.python.org/pypi/setuptools/18.3.1
+
+It is assumed that OneView 2.x is configured and it is managing c7000 and blades.
+
+Business use case:
+
+whenever server failures are detected - automatically create a new server from 
+the resource pool without impacting the storage presented and OS installed.
+	
 The functionality of script:
-The below script generates, download the certificates and then monitors the alerts
-received from HPE OneView's State-Change Message Bus. Specifically, the scmb alerts
-raised for server profiles when they are at critical/warning state and is in ACTIVE mode.
-This code then forks a thread to handle migration of server profile to another server hardware.
 
-The forked script to create copy of server profile is termed create_server_profile_to_hardware.py,
-Here server hardware's with no profile are fetched. This server hardware list is
-then parsed to get a server hardware with good health and NIC status. A check is
-further done to check if the hardware type matches that of server profile hardware
-for which the alert was raised. The script then updates the server profile with the
-new hardware details. A single profile update failure state is checked and the
-process is repeated to ensure that we result in healthy server profile.
-In order for the scripts to register and listen on the SCMB a couple
-of thing need to happen first.
+The below script listens for server hardware critical and active alerts coming from HPE OneView.
+When alert is recived by script, it creates a separate thread to handle the business logic and goes back
+to listening mode to handle new alerts requests.
 
-#1. The script generates the certificate  to connect to oneview if it does not exists
-
-#2. The script download a copy of the SSL key and certificate. 
+The thread invokes "create_server_profile_to_hardware.py" to provision a new server.
+Script picks up the free available server from pool after validating with health rules.
+Once healthy server is found, script unassigns profile from failed servers and assigns
+newly identified healthy server. If profile create fails for some reason, scripts looks for
+another healthy server. Script throws messages if no free available servers are available
+in the pool. If all validations are passed, user should see server profile created on new
+server. Server will have same MACs and WWNs. Server will be configured to boot from SAN so that
+newly provisioned server will be booted with same OS as failed server.
 
 Running the script:
-The profile_migrationy.py scrip can be invoked by:
 
-  set appliance ip, username and password in the profile_migration parameters
+Pre-requisite: set appliance ip, username and password in the profile_migration.py ( at the beginning of the file)
+
+1. unzip the oneview_script.zip file
+2. cd into oneview_script folder
+3. run below command
+  
   ./profile_migration.py
 
+ 
+ Note: Script automatically manages certificates required for connecting to OneView Rabbit MQs.
+ Following tasks are taken care. User doesn't need to do anything.
+1. The script generates the certificate  to connect to oneview if it does not exists
+2. The script download a copy of the SSL key and certificate. 
+
+In the production, above script can be called from cron tab to start as a service running in the back ground.

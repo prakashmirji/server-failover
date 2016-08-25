@@ -196,7 +196,7 @@ def checkNicStatus(con, serverHardwareUri):
 
 
 def create_server_profile_copy(hostip,user,password,uri, serverProfilesList, serverHardwareList):
-
+    time.sleep(900)
     #connect to the appliance
     logging.info(" "+dat1+" "+tim1+ hostip)
     credential = {'userName': user, 'password': password}

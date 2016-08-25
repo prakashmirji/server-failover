@@ -43,7 +43,6 @@ def callback(ch, method, properties, body):
                         print ("Server Profile has entered into Critical State!!!")
                         logging.info(" "+dat1+" "+tim1+"Server Profile has entered into Critical State!")
                         try:
-                               time.sleep(60)
                                t=Thread(target=csp.create_server_profile_copy, args=(host, user, passwd, resourceUri, serverProfilesList, serverHardwareList))
                                threads.append(t)
                                t.start()
